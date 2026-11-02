@@ -1,0 +1,8 @@
+node_modules/
+.npm-cache/
+.tmp/
+*.log
+.DS_Store
+
+# 内部需求说明（含本机路径），不进公开仓库
+PROMPT.md
