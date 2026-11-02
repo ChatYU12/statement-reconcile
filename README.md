@@ -27,6 +27,27 @@ npm start            # 默认 http://127.0.0.1:3000
 
 未配置钉钉凭据时自动进入**本地模式**（跳过免登）；配置后进入钉钉模式，详见 [docs/DEPLOY.md](docs/DEPLOY.md)。
 
+## 在线演示版（不需要装任何东西）
+
+**https://chatyu12.github.io/statement-reconcile/**
+
+浏览器里直接打开就能用：选对账单 + 发货单 → 确认映射 → 看总额结论 → 下载差异表。功能与 Node 版**完全同一套代码**，区别只有两点：
+
+- 文件**不会上传到任何服务器**，全部在本机内存里解析，关掉页面即清空（页面顶部有说明条）
+- 钉钉免登不可用，固定显示「演示模式」
+
+它是怎么来的：`npm run build:pages` 把 `server/lib` 原样包成浏览器模块（`scripts/build-pages.mjs`），再由 `web/api.js` 在内存里实现 `/api/*` 那几个接口，`public/app.js` 一行不改。所以不存在"演示版逻辑和正式版不一样"的问题。
+
+改完代码要同步演示版：
+
+```bash
+npm run build:pages     # 重新生成 docs/
+npm run demo-smoke      # jsdom 跑真实交互：选文件→核对→结果页→导出（25 项）
+git add -A && git commit -m "..." && git push
+```
+
+Pages 1–2 分钟自动重建，地址不变。
+
 ```bash
 npm test             # 单元测试（33 项：金额/数量/标准化/表头识别/引擎）
 npm run e2e          # 端到端验收（40 项：真起服务跑 HTTP 上传→核对→导出）

@@ -14,7 +14,9 @@
     "samples": "node samples/make-samples.js",
     "test": "node --test tests/*.test.js",
     "e2e": "node tests/e2e.js",
-    "ui-smoke": "node tests/ui-smoke.js"
+    "ui-smoke": "node tests/ui-smoke.js",
+    "build:pages": "node scripts/build-pages.mjs",
+    "demo-smoke": "node tests/demo-smoke.js"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
