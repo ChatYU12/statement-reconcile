@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F5F6F7" />
+  <meta name="color-scheme" content="light" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>对账单核对</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="appbar">
+    <div class="appbar__brand">
+      <span class="appbar__mark" aria-hidden="true">对</span>
+      <h1 class="appbar__title">对账单核对</h1>
+    </div>
+    <div class="appbar__right">
+      <span class="badge" id="userBadge" title="当前使用者">
+        <span class="badge__dot" id="userBadgeDot" aria-hidden="true"></span>
+        <span class="badge__text" id="userBadgeText">加载中</span>
+      </span>
+    </div>
+  </header>
+
+  <main class="app" id="app">
+    <noscript>
+      <div class="notice notice--error">
+        <p class="notice__text">当前环境未启用脚本，无法使用核对功能。请在浏览器中启用后重新打开。</p>
+      </div>
+    </noscript>
+
+    <div class="notice notice--warn" id="authNotice" hidden>
+      <p class="notice__text" id="authNoticeText"></p>
+      <button type="button" class="notice__close" id="authNoticeClose">关闭</button>
+    </div>
+
+    <ol class="steps" id="steps" aria-label="核对进度">
+      <li class="step is-active" data-step="upload" aria-current="step">
+        <span class="step__num" aria-hidden="true">1</span>
+        <span class="step__label">上传文件</span>
+      </li>
+      <li class="step" data-step="mapping">
+        <span class="step__num" aria-hidden="true">2</span>
+        <span class="step__label">确认映射</span>
+      </li>
+      <li class="step" data-step="result">
+        <span class="step__num" aria-hidden="true">3</span>
+        <span class="step__label">核对结果</span>
+      </li>
+    </ol>
+
+    <!-- ========== 视图一：上传 ========== -->
+    <section class="view is-active" id="view-upload" aria-labelledby="uploadTitle">
+      <div class="page-head">
+        <h2 class="page-title" id="uploadTitle" tabindex="-1">选择本次要核对的文件</h2>
+        <p class="page-sub">1 份对账单 + 至少 1 份发货单，支持 .xlsx / .xls，单个文件不超过 20MB。</p>
+      </div>
+
+      <section class="card block" aria-labelledby="statementTitle">
+        <div class="block__head">
+          <h3 class="block__title" id="statementTitle">对账单</h3>
+          <span class="block__hint">1 份，重新选择会替换</span>
+        </div>
+        <div class="dropzone" id="statementDrop">
+          <span class="dropzone__plus" aria-hidden="true">＋</span>
+          <p class="dropzone__text">点击选择，或把文件拖到这里</p>
+          <p class="dropzone__hint">支持 .xlsx / .xls，单个文件不超过 20MB</p>
+          <button type="button" class="btn btn--ghost btn--sm" id="statementPick">选择对账单文件</button>
+        </div>
+        <input class="sr-only" type="file" id="statementInput" accept=".xlsx,.xls" aria-label="选择对账单文件" />
+        <ul class="filelist" id="statementList"></ul>
+        <p class="empty" id="statementEmpty">还没有选择对账单，请先添加 1 份 .xlsx / .xls 文件。</p>
+      </section>
+
+      <section class="card block" aria-labelledby="shipmentTitle">
+        <div class="block__head">
+          <h3 class="block__title" id="shipmentTitle">发货单</h3>
+          <span class="block__hint" id="shipmentCountHint">已选 0 张</span>
+        </div>
+        <div class="dropzone" id="shipmentDrop">
+          <span class="dropzone__plus" aria-hidden="true">＋</span>
+          <p class="dropzone__text">点击选择，或把文件拖到这里</p>
+          <p class="dropzone__hint">可多选、可重复追加，支持 .xlsx / .xls</p>
+          <button type="button" class="btn btn--ghost btn--sm" id="shipmentPick">选择发货单文件</button>
+        </div>
+        <input class="sr-only" type="file" id="shipmentInput" accept=".xlsx,.xls" multiple aria-label="选择发货单文件，可多选" />
+        <ul class="filelist" id="shipmentList"></ul>
+        <p class="empty" id="shipmentEmpty">还没有选择发货单，可一次选多份，也可分批追加。</p>
+      </section>
+
+      <div class="skeleton-card" id="uploadSkeleton" hidden>
+        <p class="skeleton__text">正在解析文件，请稍候…</p>
+        <div class="skeleton__line skeleton__line--wide"></div>
+        <div class="skeleton__line"></div>
+        <div class="skeleton__line skeleton__line--short"></div>
+      </div>
+
+      <div class="actionbar">
+        <p class="actionbar__note" id="uploadNote">请先选择对账单与至少 1 份发货单</p>
+        <button type="button" class="btn btn--primary btn--block" id="btnUpload" disabled>
+          <span class="spinner" id="uploadSpinner" hidden aria-hidden="true"></span>
+          <span id="uploadBtnLabel">开始核对</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========== 视图二：确认映射 ========== -->
+    <section class="view" id="view-mapping" aria-labelledby="mappingTitle">
+      <div class="page-head">
+        <button type="button" class="linkbtn" id="btnBackUpload">← 返回修改文件</button>
+        <h2 class="page-title" id="mappingTitle" tabindex="-1">确认表头与字段映射</h2>
+        <p class="page-sub">每个文件按实际表格指定工作表、表头行与字段对应的列。数量必填，金额与单价至少填一个，名称与两个编码至少填一个。</p>
+      </div>
+
+      <div class="notice notice--error" id="mappingError" hidden>
+        <p class="notice__text" id="mappingErrorText"></p>
+        <button type="button" class="notice__close" id="mappingErrorClose">关闭</button>
+      </div>
+
+      <div class="notices" id="mappingWarnings"></div>
+
+      <div class="cards" id="fileCards"></div>
+
+      <div class="actionbar">
+        <p class="actionbar__note" id="mappingNote"></p>
+        <button type="button" class="btn btn--primary btn--block" id="btnCheck" disabled>
+          <span class="spinner" id="checkSpinner" hidden aria-hidden="true"></span>
+          <span id="checkBtnLabel">开始比对</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========== 视图三：结果 ========== -->
+    <section class="view" id="view-result" aria-labelledby="resultTitle">
+      <div class="page-head">
+        <h2 class="page-title" id="resultTitle" tabindex="-1">核对结果</h2>
+        <p class="page-sub" id="resultHeadline"></p>
+      </div>
+
+      <section class="totalcard" id="totalCard" aria-labelledby="totalCardTitle" hidden>
+        <div class="totalcard__head">
+          <h3 class="totalcard__title" id="totalCardTitle">金额总额</h3>
+          <span class="totalcard__note" id="totalFilesNote"></span>
+        </div>
+        <div class="totalcard__grid">
+          <div class="totalcell">
+            <span class="totalcell__label" id="totalStatementLabel">对账单金额</span>
+            <span class="totalcell__value" id="totalStatement">—</span>
+          </div>
+          <div class="totalcell">
+            <span class="totalcell__label" id="totalShipmentLabel">发货单金额</span>
+            <span class="totalcell__value" id="totalShipment">—</span>
+          </div>
+          <div class="totalcell totalcell--diff">
+            <span class="totalcell__label">差额</span>
+            <span class="totalcell__value" id="totalDiff">—</span>
+          </div>
+        </div>
+        <p class="totalcard__conclusion" id="totalConclusion" hidden></p>
+      </section>
+
+      <div class="card identical" id="identicalPanel" hidden>
+        <p class="identical__icon" aria-hidden="true">✓</p>
+        <p class="identical__title" id="identicalTitle">总额一致</p>
+        <p class="identical__desc" id="identicalDesc">对账单与参与核对的发货单金额完全相等，本次不生成差异表</p>
+      </div>
+
+      <div class="stats" id="resultStats"></div>
+
+      <div class="matchbar" id="matchBar" hidden></div>
+
+      <div class="result-actions" id="resultActions" hidden>
+        <a class="btn btn--primary btn--block" id="btnDownload" href="#" download>下载差异表</a>
+        <p class="hint hint--center">差异表含产品编码、名称、编码2、双方金额、金额差与备注。</p>
+      </div>
+
+      <div class="notices" id="resultNotices"></div>
+      <div class="groups" id="resultGroups"></div>
+
+      <div class="actionbar actionbar--plain">
+        <button type="button" class="btn btn--ghost btn--block" id="btnReset">重新核对</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="demo/vendor/xlsx.full.min.js" defer></script>
+  <script src="demo/vendor/exceljs.min.js" defer></script>
+  <script src="demo/lib.js" defer></script>
+  <script src="demo/api.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
